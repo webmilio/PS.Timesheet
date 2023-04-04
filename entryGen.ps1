@@ -182,9 +182,11 @@ do
     }
     else
     {
-        if ($choiceBindings.ContainsKey($decision))
+        $binding = $null
+
+        if ($choiceBindings.TryGetValue($decision, [ref] $binding))
         {
-            $choiceBindings[$decision].Invoke()
+            $binding.Invoke()
         }
         else
         {
