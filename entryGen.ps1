@@ -5,6 +5,7 @@ using namespace System.Management.Automation.Host
 $LogsDirectory = 'logs'
 $ActivitiesDirectory = 'activities'
 $TimeDisplayFormat = "HH:mm:ss"
+$script:Culture = [System.Globalization.CultureInfo]::GetCultureInfo("en-CA")
 #endregion
 
 #region Variables
@@ -65,8 +66,6 @@ function EndSplit {
     if ($null -ne $script:doing)
     {
         $workTime = [datetime]::Now - $script:startTime
-        $workTime += [timespan]::FromMinutes(15)
-
         $script:log[$script:doingIndex] += $workTime
 
         WriteSplit -Time $script:log[$script:doingIndex]
@@ -77,10 +76,10 @@ function EndSplit {
 }
 
 function WriteSplit {    
-    $hours = [double[]]::new($script:log.Length)
+    $hours = [string[]]::new($script:log.Length)
 
     for ($i = 0; $i -lt $script:log.Count; $i++) {
-        $hours[$i] = [math]::Round($script:log[$i].TotalHours, 2)
+        $hours[$i] = [math]::Round($script:log[$i].TotalHours, 2).ToString($script:Culture)
     }
 
     ($hours -join [System.Environment]::NewLine) | Out-File -FilePath $script:logPath
@@ -91,7 +90,7 @@ function LoadLog {
     $lines = Get-Content -Path $FilePath
 
     for ($i = 0; $i -lt $lines.Count; $i++) {
-        $script:log[$i] = [timespan]::FromHours([double]::Parse($lines[$i]))
+        $script:log[$i] = [timespan]::FromHours([double]::Parse($lines[$i], $script:Culture))
     }
 }
 
