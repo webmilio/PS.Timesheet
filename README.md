@@ -1,0 +1,1 @@
+__PS.Timesheet__ is a tool allowing you to generate timesheets based on which activity you did, reading from a list of text files in a folder called `activities`.
