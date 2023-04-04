@@ -91,7 +91,7 @@ function LoadLog {
     $lines = Get-Content -Path $FilePath
 
     for ($i = 0; $i -lt $lines.Count; $i++) {
-        $script:log[$i] = [timespan]::FromHours($lines[$i])
+        $script:log[$i] = [timespan]::FromHours([double]::Parse($lines[$i]))
     }
 }
 
