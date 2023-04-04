@@ -84,7 +84,6 @@ function EndSplit {
     if ($null -ne $script:doing)
     {
         $workTime = [datetime]::Now - $script:startTime
-        $workTime += [timespan]::FromMinutes(15)
 
         $script:log[$script:doingIndex] += $workTime
 
