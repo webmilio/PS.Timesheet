@@ -2,10 +2,28 @@ using namespace System.Collections.Generic
 using namespace System.Management.Automation.Host
 
 #region Settings
-$LogsDirectory = 'logs'
-$ActivitiesDirectory = 'activities'
-$TimeDisplayFormat = "HH:mm:ss"
-$script:Culture = [System.Globalization.CultureInfo]::GetCultureInfo("en-CA")
+$SettingsFile = "settings.json"
+$script:Settings = [PSCustomObject]@{
+    LogsDirectory = 'logs'
+    ActivitiesDirectory = 'activities'
+    
+    TimeDisplayFormat = "HH:mm:ss"
+
+    # It is recommended to leave this on an culture which uses a period (.) as a 
+    # numeric separator since the online Excel uses periods as separators as well
+    CultureName = "en-CA"
+}
+
+if (Test-Path -Path $SettingsFile)
+{
+    $script:Settings = Get-Content -Path $SettingsFile | ConvertFrom-Json
+}
+
+# We convert it back anyways in case we add new settings
+$script:Settings | ConvertTo-Json | Set-Content -Path $SettingsFile
+
+$Culture = [System.Globalization.CultureInfo]::GetCultureInfo($script:Settings.CultureName)
+
 #endregion
 
 #region Variables
@@ -66,6 +84,8 @@ function EndSplit {
     if ($null -ne $script:doing)
     {
         $workTime = [datetime]::Now - $script:startTime
+        $workTime += [timespan]::FromMinutes(15)
+
         $script:log[$script:doingIndex] += $workTime
 
         WriteSplit -Time $script:log[$script:doingIndex]
@@ -100,27 +120,27 @@ function GetDecisionName {
 
 function GetLogPath {
     param($Time)
-    return "$LogsDirectory\$($Time.ToString("ddMMyyyy")).txt"
+    return "$($script:Settings.LogsDirectory)\$($Time.ToString("ddMMyyyy")).txt"
 }
 #endregion
 
-if (-Not (Test-Path $LogsDirectory))
+if (-Not (Test-Path $script:Settings.LogsDirectory))
 {
-    New-Item $LogsDirectory -ItemType Directory | Out-Null
-    Write-Host "Created logs folder under '$LogsDirectory'."
+    New-Item $script:Settings.LogsDirectory -ItemType Directory | Out-Null
+    Write-Host "Created logs folder under '$($script:Settings.LogsDirectory)'."
 }
 
-if (-Not (Test-Path $ActivitiesDirectory))
+if (-Not (Test-Path $script:Settings.ActivitiesDirectory))
 {
     Write-Error "The '$activityFolder' was created and opened, please create your activity text files in the directory."
 
-    New-Item $ActivitiesDirectory -ItemType Directory
-    Invoke-Item $ActivitiesDirectory
+    New-Item $script:Settings.ActivitiesDirectory -ItemType Directory
+    Invoke-Item $script:Settings.ActivitiesDirectory
 
     return
 }
 
-$activityFiles = Get-ChildItem -Path $ActivitiesDirectory -Filter "*.txt" | Sort-Object Name
+$activityFiles = Get-ChildItem -Path $script:Settings.ActivitiesDirectory -Filter "*.txt" | Sort-Object Name
 $choices = [ChoiceDescription[]]::new($activityFiles.Count + 2)
 
 $script:labels = [string[]]::new($choices.Length)
@@ -150,7 +170,7 @@ if (Test-Path $logPath)
     Write-Host "Loaded existing log $logPath"
 }
 
-Write-Host "Starting timesheet at $([datetime]::Now.ToString($TimeDisplayFormat))"
+Write-Host "Starting timesheet at $([datetime]::Now.ToString($script:Settings.TimeDisplayFormat))"
 
 do
 {
